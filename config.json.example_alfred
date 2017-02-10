@@ -1,0 +1,39 @@
+{
+  "receiver": {
+    "receivers": [
+      { "module": "alfred",
+        "config": {
+          "alfred_json": "/usr/bin/alfred-json",
+          "sockets": [
+            "/var/run/alfred.sock"
+          ],
+          "interval": {
+            "statistics": 60,
+            "nodeinfo": 500
+          }
+        }
+      },
+      { "module": "aliases",
+        "config": {
+          "file": "./aliases.json"
+        },
+        "overlay": true
+      }
+    ],
+    "ifaces": [
+      "bat0"
+    ],
+    "storage": {
+      "file": "./raw.json"
+    },
+    "purge": {
+      "maxAge": 14
+    }
+  },
+  "provider": {
+    "offlineTime": 900
+  },
+  "webserver": {
+    "port": 4000
+  }
+}
