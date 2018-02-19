@@ -38,6 +38,7 @@
     "offlineTime": 900,
     "metricsOfflineTime": 60,
     "ffapiPath": "./ffapi/",
+    "showGatewayLabel": true,
     "named": {
       "mapTemplate": "https://map.community.freifunk.net/#!v:g;n:{node_id}",
       "origin": "nodes.community.freifunk.net.",
