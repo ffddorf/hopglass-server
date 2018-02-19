@@ -41,7 +41,7 @@ var config = {
   }
 }
 
-module.exports = function (configData) {
+module.exports = function (observer, configData) {
   if (configData.ifaces)
     delete config.ifaces
 
@@ -64,9 +64,15 @@ module.exports = function (configData) {
   api.receiverCallback  = receiverCallback
   api.sharedConfig = config
   api.getRaw = getRaw
-  for (let i in config.receivers) {
+  for (var i in config.receivers) {
     var r = config.receivers[i]
-    receiverList.push(require(__dirname + '/receiver/' + r.module)(i, r.config, api))
+    try {
+      receiverList.push(require(__dirname + '/receiver/' + r.module)(i, r.config, api))
+    } catch(err) {
+      console.err('Error while initializing receiver "' + r.module + '": ', err)
+      console.err('Exiting...')
+      process.exit(1)
+    }
   }
 
   function receiverCallback(id, obj, receiverId) {
@@ -103,6 +109,8 @@ module.exports = function (configData) {
       raw[id].neighbours = obj.neighbours
       raw[id].lastupdate.neighbours = new Date().toISOString()
     }
+
+    observer.dataReceived(raw[id])
   }
 
   function getRaw() {
@@ -123,15 +131,15 @@ module.exports = function (configData) {
     // filtern anhand der übergebenen Filterwerte
     switch (query.filter) {
     case 'site':
-      return _.filter(data, function(o) {
-        return _.get(o, 'nodeinfo.system.site_code', 'unknown') === query.value ? true : false
+      return _.pickBy(data, function(o) {
+        return _.includes(_.split(query.value, ','), _.get(o, 'nodeinfo.system.site_code', 'unknown'))
       })
     case 'firmware_release':
-      return _.filter(data, function(o) {
-        return _.get(o, 'nodeinfo.software.firmware.release', 'unknown') === query.value ? true : false
+      return _.pickBy(data, function(o) {
+        return _.includes(_.split(query.value, ','), _.get(o, 'nodeinfo.software.firmware.release', 'unknown'))
       })
     case 'firstseen':
-      return _.filter(data, function(o) {
+      return _.pickBy(data, function(o) {
         var firstseen = (new Date(o.firstseen)).getTime()
         var now = (new Date()).getTime()
         var v = parseInt(query.value)*1000
@@ -142,7 +150,7 @@ module.exports = function (configData) {
         }
       })
     case 'lastseen':
-      return _.filter(data, function(o) {
+      return _.pickBy(data, function(o) {
         var lastseen = (new Date(o.lastseen)).getTime()
         var now = (new Date()).getTime()
         var v = parseInt(query.value)*1000
@@ -153,7 +161,7 @@ module.exports = function (configData) {
         }
       })
     case 'uptime':
-      return _.filter(data, function(o) {
+      return _.pickBy(data, function(o) {
         var uptime = parseInt(_.get(o, 'statistics.uptime', '-1'))
         var v = parseInt(query.value)
         if (v >= 0) {
@@ -163,7 +171,7 @@ module.exports = function (configData) {
         }
       })
     case 'clients':
-      return _.filter(data, function(o) {
+      return _.pickBy(data, function(o) {
         var clients = parseInt(_.get(o, 'statistics.clients.total', '-1'))
         var v = parseInt(query.value)
         if (v >= 0) {
@@ -173,8 +181,8 @@ module.exports = function (configData) {
         }
       })
     case 'nodeid':
-      return _.filter(data, function(o) {
-        return _.get(o, 'nodeinfo.node_id') == query.value
+      return _.pickBy(data, function(o) {
+        return _.includes(_.split(query.value, ','), _.get(o, 'nodeinfo.node_id', 'unknown'))
       })
     default:
       return data

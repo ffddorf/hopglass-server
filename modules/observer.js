@@ -16,40 +16,44 @@
 
 'use strict'
 
-var http = require('http')
 var _ = require('lodash')
 
 var config = {
-  ip: '::',
-  port: 4000
+  /* eslint-disable quotes */
+  observers: [
+  ]
 }
 
-module.exports = function(index, configData) {
+module.exports = function (configData) {
+  if (configData.observers)
+    delete config.observers
+
   _.merge(config, configData)
 
-  http.createServer(function(req, stream) {
-    stream.setHeader('Access-Control-Allow-Origin', '*')
+  var observerList = []
 
-    var url = require('url').parse(req.url, true) // true to get query as object
-    var success = false
+  for (var i in config.observers) {
+    var r = config.observers[i]
+    try {
+      observerList.push(require(__dirname + '/observer/' + r.module)(r.config))
+    } catch(err) {
+      console.err('Error while initializing observer "' + configData.observers[i].module + '": ', err)
+      console.err('Exiting...')
+      process.exit(1)
+    }
+  }
 
-    for (let path in index) {
-      if (url.pathname == '/' + path) {
-        try {
-          index[path](stream, url.query)
-        } catch(err) {
-          console.err('Error while handling request "' + path + '": ', err)
-        }
-        success = true
+  function dataReceived(data) {
+    for (var i in observerList) {
+      try {
+        observerList[i].dataReceived(data)
+      } catch(err) {
+        console.err('Error in observer "' + configData.observers[i].module + '", function dataReceived: ', err)
       }
     }
+  }
 
-    if (!success) {
-      stream.writeHead(404, { 'Content-Type': 'text/plain' })
-      stream.write('404')
-      stream.end()
-    }
-  }).listen(config.port, config.ip, function() {
-    console.log('webserver listening on port ' + config.port)
-  })
+  var exports = {}
+  exports.dataReceived = dataReceived
+  return exports
 }

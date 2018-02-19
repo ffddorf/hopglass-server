@@ -16,40 +16,19 @@
 
 'use strict'
 
-var http = require('http')
 var _ = require('lodash')
 
 var config = {
-  ip: '::',
-  port: 4000
 }
 
-module.exports = function(index, configData) {
+module.exports = function(configData) {
   _.merge(config, configData)
 
-  http.createServer(function(req, stream) {
-    stream.setHeader('Access-Control-Allow-Origin', '*')
+  function dataReceived(data) {
+    console.log(data)
+  }
 
-    var url = require('url').parse(req.url, true) // true to get query as object
-    var success = false
-
-    for (let path in index) {
-      if (url.pathname == '/' + path) {
-        try {
-          index[path](stream, url.query)
-        } catch(err) {
-          console.err('Error while handling request "' + path + '": ', err)
-        }
-        success = true
-      }
-    }
-
-    if (!success) {
-      stream.writeHead(404, { 'Content-Type': 'text/plain' })
-      stream.write('404')
-      stream.end()
-    }
-  }).listen(config.port, config.ip, function() {
-    console.log('webserver listening on port ' + config.port)
-  })
+  var exports = {}
+  exports.dataReceived = dataReceived
+  return exports
 }
