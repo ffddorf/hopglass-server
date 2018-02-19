@@ -51,6 +51,7 @@
     "offlineTime": 900,
     "metricsOfflineTime": 60,
     "ffapiPath": "./ffapi/",
+    "geojsonFile": "./geojson.json",
     "named": {
       "mapTemplate": "https://map.community.freifunk.net/#!v:g;n:{node_id}",
       "origin": "nodes.community.freifunk.net.",

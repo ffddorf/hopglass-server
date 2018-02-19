@@ -39,7 +39,8 @@
     }
   },
   "provider": {
-    "offlineTime": 900
+    "offlineTime": 900,
+    "geojsonFile": "./geojson.json"
   },
   "webserver": {
     "port": 4000
