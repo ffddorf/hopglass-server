@@ -75,6 +75,7 @@
   },
   "webserver": {
     "ip": "::",
-    "port": 4000
+    "port": 4000,
+    "workers": 2
   }
 }

@@ -16,36 +16,48 @@
 
 'use strict'
 
+const cluster = require('cluster');
 var http = require('http')
 var _ = require('lodash')
 
 var config = {
   ip: '::',
-  port: 4000
+  port: 4000,
+  workers: 2
 }
 
 module.exports = function(index, configData) {
   _.merge(config, configData)
+  
+  if (cluster.isMaster) {
+    // Fork workers.
+    for (var i = 0; i < config.workers; i++) {
+      cluster.fork();
+    }
 
-  http.createServer(function(req, stream) {
-    stream.setHeader('Access-Control-Allow-Origin', '*')
+    cluster.on('exit', (worker, code, signal) => {
+      console.log(`worker ${worker.process.pid} died`);
+    });
+  } else {
+    http.createServer(function(req, stream) {
+      stream.setHeader('Access-Control-Allow-Origin', '*')
 
-    var url = require('url').parse(req.url, true) // true to get query as object
-    var success = false
+      var url = require('url').parse(req.url, true) // true to get query as object
+      var success = false
 
-    for (let path in index) {
-      if (url.pathname == '/' + path) {
-        index[path](stream, url.query)
-        success = true
+      for (let path in index) {
+        if (url.pathname == '/' + path) {
+          index[path](stream, url.query)
+          success = true
+        }
       }
-    }
 
-    if (!success) {
-      stream.writeHead(404, { 'Content-Type': 'text/plain' })
-      stream.write('404')
-      stream.end()
-    }
-  }).listen(config.port, config.ip, function() {
-    console.log('webserver listening on port ' + config.port)
-  })
+      if (!success) {
+        stream.writeHead(404, { 'Content-Type': 'text/plain' })
+        stream.write('404')
+        stream.end()
+      }
+    }).listen(config.port, config.ip);
+    console.log('webserver worker thread ' + process.pid + ' started on port ' + config.port)
+  }
 }
